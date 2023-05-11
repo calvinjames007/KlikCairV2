@@ -9,5 +9,41 @@
 </head>
 <body>
     <h1><center>Kamu Sudah Login</center></h1>
+
+    <div>
+        <center><a href="/user/logout"><button>Log Out</button></a>  <a href="/user/location"><button>Platform Location</button></a> <a href="/user/profile"><button>Profile</button></a></center>
+    </div>
+
+    <div class="container">
+        <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Money Borrowed</th>
+                <th scope="col">Due Date</th>
+                <th scope="col">Status</th>
+                <th scope="col">Platform being used</th>
+                <th scope="col">Loan Method</th>
+              </tr>
+            </thead>
+            <tbody>
+
+                <% data.forEach(loan => { %>
+                    <% if (!loan) { %>
+                        <a href="/user/loan"><button>Ajukan Pinjaman</button></a>
+                    <% } %>
+
+                    <% if (loan) { %>
+                        <tr>
+                            <td><%= currency(loan.totalLoan) %></td>
+                            <td><%= loan.dueDate %></td>
+                            <td><%= loan.status %></td>
+                            <td><%= loan.Platform.name %></td>
+                            <td><%= loan.Platform.loanMethod %></td>
+                        </tr>
+                    <% } %>
+                <% }) %>
+            </tbody>
+          </table>
+    </div>
 </body>
 </html>

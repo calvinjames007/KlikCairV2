@@ -1,5 +1,7 @@
 const {User, Profile, Loan, Platform} = require('../models')
 const {Op} = require('sequelize')
+const bcrypt = require('bcryptjs')
+const currency = require('../helper/formatter')
 
 class Controller {
     static showFormRegisterUser (req, res) {
@@ -12,6 +14,14 @@ class Controller {
         User.create({
             email:email,
             password:password,
+        })
+        .then((data) => {
+            return Profile.create({
+                name: `user-${email}`,
+                age: 0,
+                address: `Indonesia`,
+                UserId: data.id
+            })
         })
         .then((data) => {
             res.redirect('/')
@@ -28,23 +38,25 @@ class Controller {
 
     static postLogin (req, res) {
         const {email, password} = req.body
-
         console.log(req.body)
-
         User.findOne({where: {email}})
         .then((user) => {
             if (user) {
                 const isValidPassword = bcrypt.compareSync(password, user.password);
 
                 if (isValidPassword) {
-                    res.redirect("/user/dashboard")
+                    console.log('masuk di 1')
+                    req.session.UserId = user.id;
+                    return res.redirect(`/user/dashboard`)
                 } else {
+                    console.log('masuk di 2')
                     const errors = `Invalid+user+or+password`;
-                    res.redirect(`/login?errors=${errors}`)
+                    return res.redirect(`/login?errors=${errors}`)
                 }
             } else {
                 const errors = `User+or+password+not+found`;
-                    res.redirect(`/login?errors=${errors}`)
+                    console.log('masuk di 3')
+                    return res.redirect(`/login?errors=${errors}`)
             }
         })
         .catch((err) => {
@@ -53,7 +65,142 @@ class Controller {
     }
 
     static showDashboard (req, res) {
-        res.render('4_dashboard')
+        const {id} = req.session.id
+        Loan.findOne({
+            where: {
+                UserId : req.session.UserId
+            },
+            include: [{model: Platform}]
+        })
+        // Loan.findByPk(+id, {include: [{model: Platform}]})
+
+        .then((data) => {
+            const dataArray = Array.isArray(data) ? data : [data]
+            res.render('4_dashboard', {data: dataArray, currency})
+            // console.log(data)
+            // res.send(data)
+        })
+        .catch((err) => {
+            res.send(err)
+        })
+    }
+
+    static showLoanForm(req, res) {
+        const errors = req.query.errors ? req.query.errors.split(',') : [];
+        res.render('5_loanPage', {errors: req.query.errors}) 
+    }
+
+    static PostLoan(req, res) {
+        const {UserId, PlatformId, totalLoan} = req.body
+        
+        Loan.create({
+            UserId:req.session.UserId.toString(),
+            PlatformId:PlatformId,
+            totalLoan:totalLoan
+        })
+        .then((data) => {
+            res.redirect('/user/dashboard')
+        })
+        .catch((err) => {
+            let errorMessages = err.errors.map(el => {
+                return el.message
+            })
+            if (err.name === "SequelizeValidationError" || err.name === "SequelizeUniqueConstraintError") {
+                res.redirect(`/user/loan?errors=${errorMessages}`)
+            } else {
+                res.send(err)
+            }
+        })
+    }
+
+    static showLocation(req, res) {
+        const { search, sort } = req.query;
+
+       if (sort) {
+        Platform.findAll({
+            order: [
+                ['name', 'ASC']
+            ]
+        })
+        .then((result) => {
+            res.render("5_location", {result, title: `Find Your Platform Location`})    
+            })
+            .catch((err) => {
+                res.render(err);
+            });
+       }
+
+        Platform.findByLocation(search)
+        .then((result) => {
+        res.render("6_locationPage", {result, title: `Find Your Platform Location`})    
+        })
+        .catch((err) => {
+            res.render(err);
+        });
+    }
+
+    static showProfile(req, res) {
+        console.log(req.session);
+        Profile.findOne({
+            where: {
+                UserId: req.session.UserId
+            }
+        })
+        .then((result) => {
+            res.render("7_profilePage", {result, title: `My Profile`})
+            // console.log(result)
+        })
+        .catch((err) => {
+            res.send(err);
+        });
+    }
+
+    static showEditProfileForm(req, res) {
+        res.render('8_editProfilePage')
+    }
+
+    static editProfileForm(req, res) {
+        const {name, age, address} = req.body
+
+        Profile.update({
+            name:name,
+            age:age,
+            address:address
+        }, {where:{UserId : req.session.UserId}})
+        .then((data) => {
+            res.redirect('/user/profile')
+            // res.send(data)
+        })
+        .catch((err) => {
+            res.send(err)
+        })
+    }
+
+    static deleteProfile(req, res) {
+        Profile.destroy({
+            where: {UserId : req.session.UserId}
+        })
+        .then((data) => {
+            return User.destroy({
+                where: {id : req.session.UserId}
+            })
+        })
+        .then(() => {
+            res.redirect('/user/login')
+        })
+        .catch((err) => {
+            res.send(err)
+        })
+    }
+
+    static logout(req, res) {
+        req.session.destroy(function(err) {
+            if (err) {
+                res.send(err);
+            } else {
+                res.redirect("/user/login");
+            }
+          })
     }
 
 }

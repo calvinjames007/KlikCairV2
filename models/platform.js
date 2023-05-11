@@ -1,7 +1,5 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const {Model, Op} = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Platform extends Model {
     /**
@@ -13,7 +11,23 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       Platform.hasMany(models.Loan)
     }
+
+    static findByLocation(search) {
+      let options = {};
+
+        if (search) {
+            options = {
+                where: {
+                    location: {
+                        [Op.iLike]: `%${search}%`
+                    }
+                }
+            }
+        }
+        return Platform.findAll(options)
+    }
   }
+
   Platform.init({
     name: DataTypes.STRING,
     platformLogo: DataTypes.STRING,
