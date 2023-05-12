@@ -9,6 +9,13 @@
 </head>
 <body>
     <div class="container">
+
+        <% if (errors) { %>
+          <div class="alert alert-warning" role="alert">
+              <%= JSON.stringify(errors).replaceAll(",", ", ") %>
+          </div>
+        <% } %>
+
         <br>
         <center><h1>Register User Form</h1></center>
         <br>

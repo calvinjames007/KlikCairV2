@@ -35,7 +35,7 @@
                     <% if (loan) { %>
                         <tr>
                             <td><%= currency(loan.totalLoan) %></td>
-                            <td><%= loan.dueDate %></td>
+                            <td><%= moment(loan.dueDate).format('YYYY-MM-DD') %></td>
                             <td><%= loan.status %></td>
                             <td><%= loan.Platform.name %></td>
                             <td><%= loan.Platform.loanMethod %></td>

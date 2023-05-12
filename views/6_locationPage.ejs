@@ -42,7 +42,7 @@
                       <th scope="row"><%= ++index %></th>
                       <td><%= element.name %></td>
                       <td><%= element.location %></td>
-                      <td><%= element.loanLimit %></td>
+                      <td><%= currency(element.loanLimit) %></td>
                       <td><%= element.loanMethod %></td>
                     </tr>
                 <% }) %>

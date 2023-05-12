@@ -2,10 +2,12 @@ const {User, Profile, Loan, Platform} = require('../models')
 const {Op} = require('sequelize')
 const bcrypt = require('bcryptjs')
 const currency = require('../helper/formatter')
+const moment = require('moment/moment')
 
 class Controller {
     static showFormRegisterUser (req, res) {
-        res.render('2_registerPage')
+        const errors = req.query.errors ? req.query.errors.split(',') : [];
+        res.render('2_registerPage', {errors: req.query.errors})
     }
 
     static addNewUser (req, res) {
@@ -28,7 +30,14 @@ class Controller {
 
         })
         .catch((err) => {
-            res.send(err)
+            let errorMessages = err.errors.map(el => {
+                return el.message
+            })
+            if (err.name === "SequelizeValidationError" || err.name === "SequelizeUniqueConstraintError") {
+                res.redirect(`/user/add?errors=${errorMessages}`)
+            } else {
+                res.send(err)
+            }
         })
     }
 
@@ -72,13 +81,9 @@ class Controller {
             },
             include: [{model: Platform}]
         })
-        // Loan.findByPk(+id, {include: [{model: Platform}]})
-
         .then((data) => {
             const dataArray = Array.isArray(data) ? data : [data]
-            res.render('4_dashboard', {data: dataArray, currency})
-            // console.log(data)
-            // res.send(data)
+            res.render('4_dashboard', {data: dataArray, currency, moment})
         })
         .catch((err) => {
             res.send(err)
@@ -123,19 +128,19 @@ class Controller {
             ]
         })
         .then((result) => {
-            res.render("5_location", {result, title: `Find Your Platform Location`})    
+            res.render("6_locationPage", {result, currency, title: `Find Your Platform Location`})    
             })
-            .catch((err) => {
-                res.render(err);
-            });
+        .catch((err) => {
+            res.send(err);
+        });
        }
 
         Platform.findByLocation(search)
         .then((result) => {
-        res.render("6_locationPage", {result, title: `Find Your Platform Location`})    
+        res.render("6_locationPage", {result, currency, title: `Find Your Platform Location`})    
         })
         .catch((err) => {
-            res.render(err);
+            res.send(err);
         });
     }
 
@@ -148,7 +153,7 @@ class Controller {
         })
         .then((result) => {
             res.render("7_profilePage", {result, title: `My Profile`})
-            // console.log(result)
+            // res.send(result)
         })
         .catch((err) => {
             res.send(err);
@@ -156,7 +161,17 @@ class Controller {
     }
 
     static showEditProfileForm(req, res) {
-        res.render('8_editProfilePage')
+        Profile.findOne({
+            where: {
+                UserId: req.session.UserId
+            }
+        })
+        .then((result) => {
+            res.render('8_editProfilePage', {result})
+        })
+        .catch((err) => {
+            res.send(err)
+        })
     }
 
     static editProfileForm(req, res) {
@@ -169,7 +184,6 @@ class Controller {
         }, {where:{UserId : req.session.UserId}})
         .then((data) => {
             res.redirect('/user/profile')
-            // res.send(data)
         })
         .catch((err) => {
             res.send(err)
@@ -181,12 +195,17 @@ class Controller {
             where: {UserId : req.session.UserId}
         })
         .then((data) => {
+            return Loan.destroy({
+                where: {UserId : req.session.UserId}
+            })
+        })
+        .then((data) => {
             return User.destroy({
                 where: {id : req.session.UserId}
             })
         })
         .then(() => {
-            res.redirect('/user/login')
+            res.redirect('/user/logout')
         })
         .catch((err) => {
             res.send(err)

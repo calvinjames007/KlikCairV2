@@ -34,6 +34,9 @@ module.exports = (sequelize, DataTypes) => {
           if (this.totalLoan > 5000000 && value === "2") {
             throw new Error('Jumlah yang anda ingin pinjam melebihi limit platforms')
           }
+          if (this.totalLoan > 10000000 && value === "1") {
+            throw new Error('Jumlah yang anda ingin pinjam melebihi limit platforms')
+          }
         }
       }
     },
@@ -66,8 +69,8 @@ module.exports = (sequelize, DataTypes) => {
       future.setDate(future.getDate() + 120);
       loan.dueDate = future
     } else if (loan.PlatformId === '1') {
-      future = new Date();
-      temp = future.setDate(future.getDate() + 360);
+      let future = new Date();
+      future.setDate(future.getDate() + 360);
       loan.dueDate = future
     }
     loan.status = "Belum Dibayar"
